@@ -1,76 +1,57 @@
 pipeline {
-    agent any
     environment {
-        // Define static environment variables
         AWS_ACCOUNT_ID = '099199746132'
         AWS_DEFAULT_REGION = 'eu-west-1'
         ECR_REPOSITORY = 'angular-app-ecr'
         ECS_CLUSTER_NAME = 'Demo-Node-App-Cluster'
         ECS_SERVICE_NAME = 'angular-service-app'
     }
+    agent any
+
     stages {
-        stage('Prepare') {
+        stage('Checkout') {
+            steps {
+                // Check out your source code here
+                checkout scm
+            }
+        }
+
+        stage('Build and Tag Docker Image') {
             steps {
                 script {
-                    // Use Groovy's 'sh' step to execute shell commands and capture the output
-                    // Use Git to get the short SHA of the last commit
-                    def shortSha = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    // Set the IMAGE_TAG environment variable to 'latest' and append the short SHA
-                    env.IMAGE_TAG = "latest.${shortSha}"
-                    echo "IMAGE_TAG is set to ${env.IMAGE_TAG}"
+                    // Get the short Git commit hash to use as a tag
+                    GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                    IMAGE_TAG = "${ECR_REPOSITORY}:${GIT_COMMIT}"
+
+                    // Build the Docker image
+                    sh "docker build -t ${IMAGE_TAG} ."
                 }
             }
         }
-        stage('Checkout Code') {
-            steps {
-                checkout scm: [
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']], // Adjust branch as needed
-                    userRemoteConfigs: [[
-                        credentialsId: 'GitHub-PAT',
-                        url: 'https://github.com/jawadsaeed126/hello-world-angular.git'
-                    ]]
-                ]
-            }
-        }
-        stage('Login to ECR') {
+
+        stage('Push to ECR') {
             steps {
                 script {
-                    // Login to ECR
-                    sh "aws ecr get-login-password --region ${env.AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_DEFAULT_REGION}.amazonaws.com"
+                    // Login to Amazon ECR
+                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPOSITORY}"
+
+                    // Push the image to ECR
+                    sh "docker push ${IMAGE_TAG}"
+
+                    // Optionally, update the ECS service to use the new image, if desired
+                      sh "aws ecs update-service --cluster ${ECS_CLUSTER_NAME} --service ${ECS_SERVICE_NAME} --force-new-deployment --region ${AWS_REGION}"
                 }
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    // Build the Docker image with the dynamically set tag
-                    sh "docker build -t ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_DEFAULT_REGION}.amazonaws.com/${env.ECR_REPOSITORY}:${env.IMAGE_TAG} ."
-                }
-            }
-        }
+
+        // Include additional stages as needed
         
-        stage('Push Docker Image to ECR') {
-            steps {
-                script {
-                    // Push the Docker image to the ECR repository
-                    sh "docker push ${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_DEFAULT_REGION}.amazonaws.com/${env.ECR_REPOSITORY}:${env.IMAGE_TAG}"
-                }
-            }
-        }
-        stage('Deploy to ECS') {
-            steps {
-                script {
-                    // Update the ECS service to use the new Docker image
-                    sh "aws ecs update-service --cluster ${env.ECS_CLUSTER_NAME} --service ${env.ECS_SERVICE_NAME} --force-new-deployment"
-                }
-            }
-        }
     }
+
     post {
         always {
-            // Added a simple echo step to ensure the block is not empty
-            echo 'Cleanup or notification steps can be added here.'
+            // Cleanup, notifications, etc.
+            echo 'Build completed'
         }
     }
 }
