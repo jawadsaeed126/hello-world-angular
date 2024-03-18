@@ -22,7 +22,7 @@ pipeline {
                     // Get the short Git commit hash to use as a tag
                     GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     // Full ECR Image URI
-                    IMAGE_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest,${GIT_COMMIT}"
+                    IMAGE_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest"
 
                     // Build the Docker image
                     sh "docker build -t ${IMAGE_URI} ."
