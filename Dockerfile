@@ -23,7 +23,7 @@ RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build /app/dist/hello-world /usr/share/nginx/html
 
 # Step 8: Expose port 80 to the outside world
-EXPOSE 4200
+EXPOSE 80
 
 
 # Step 9: Run nginx
