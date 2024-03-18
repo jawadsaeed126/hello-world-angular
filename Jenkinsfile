@@ -6,7 +6,7 @@ pipeline {
         AWS_DEFAULT_REGION = 'eu-west-1'
         ECR_REPOSITORY = 'angular-app-ecr'
         ECS_CLUSTER_NAME = 'Demo-Node-App-Cluster'
-        ECS_SERVICE_NAME = 'angular-service'
+        ECS_SERVICE_NAME = 'angular-service-app'
     }
     stages {
         stage('Prepare') {
