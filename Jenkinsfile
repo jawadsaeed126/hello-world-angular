@@ -16,7 +16,7 @@ pipeline {
                     // Use Git to get the short SHA of the last commit
                     def shortSha = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     // Set the IMAGE_TAG environment variable to 'latest' and append the short SHA
-                    env.IMAGE_TAG = "latest.${shortSha}"
+                    env.IMAGE_TAG = "latest,${shortSha}"
                     echo "IMAGE_TAG is set to ${env.IMAGE_TAG}"
                 }
             }
