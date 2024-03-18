@@ -20,11 +20,17 @@ FROM nginx:alpine
 RUN rm -rf /usr/share/nginx/html/*
 
 # Step 7: Copy the build output to replace the default nginx contents.
+# Note: This step is necessary if your application's build process outputs more than just an index.html,
+# such as JavaScript, CSS, images, etc. It copies the entire build directory to the Nginx web root.
 COPY --from=build /app/dist/hello-world /usr/share/nginx/html
+
+# NEW: Copy a specific index.html into the container at the Nginx web root, if needed.
+# Ensure the path to index.html is correct relative to the Dockerfile's location.
+# This step is optional if your build process already places index.html correctly.
+# COPY ./path/to/index.html /usr/share/nginx/html/index.html
 
 # Step 8: Expose port 80 to the outside world
 EXPOSE 80
-
 
 # Step 9: Run nginx
 CMD ["nginx", "-g", "daemon off;"]
